@@ -36,34 +36,31 @@ function Note_isVisible(wrapped, ...args) {
 }
 
 /**
- * Wraps the default Note#_drawControlIcon so that we can override the stored icon tint based
+ * Wraps the default Note#_refreshState so that we can override the stored icon tint based
  * on whether the link is accessible for the current player (or not). This is only done for links which
  * are using the "revealed" flag.
  * @param {function} [wrapped] The wrapper function provided by libWrapper
- * @param {Object}   [args]    The arguments for Note#_drawControlIcon
+ * @param {Object}   [args]    The arguments for Note#_refreshState
  * @return [Note]    This Note
  */
 
-function Note_drawControlIcon(wrapped, ...args) {
+function Note_refreshState(wrapped, ...args) {
 	if (!this.document.getFlag(MODULE_NAME, USE_PIN_REVEALED)) return wrapped(...args);
 	
-	const value = this.document.getFlag(MODULE_NAME, PIN_IS_REVEALED);
-	if (value == undefined) return wrapped(...args);
+	const is_revealed = this.document.getFlag(MODULE_NAME, PIN_IS_REVEALED);
+	if (is_revealed == undefined) return wrapped(...args);
 
 	const is_linked = this.entry?.testUserPermission(game.user, CONST.DOCUMENT_OWNERSHIP_LEVELS.LIMITED);
 	const colour = game.settings.get(MODULE_NAME, is_linked ? CONFIG_TINT_REACHABLE_LINK : CONFIG_TINT_UNREACHABLE_LINK);
 	if (!colour?.valid) return wrapped(...args);
 	
 	// Temporarily set the icon tint
-	const saved = this.document.texture.tint;
-	this.document.texture.tint = colour;
-	const result = wrapped(...args);
-	this.document.texture.tint = saved;
-	return result;
+	wrapped(...args);
+	this.controlIcon.icon.tint = colour;
 }
 
-// Replacement for Note#_drawControlIcon for GMs, to show which pins are revealed.
-function Note_drawControlIconGM(wrapped, ...args) {
+// Replacement for Note#_refreshState for GMs, to show which pins are revealed.
+function Note_refreshStateGM(wrapped, ...args) {
 	if (!this.document.getFlag(MODULE_NAME, USE_PIN_REVEALED)) return wrapped(...args);
 	
 	const is_revealed = this.document.getFlag(MODULE_NAME, PIN_IS_REVEALED);
@@ -73,11 +70,8 @@ function Note_drawControlIconGM(wrapped, ...args) {
 	if (!colour?.valid) return wrapped(...args);
 	
 	// Temporarily set the icon tint
-	const saved = this.document.texture.tint;
-	this.document.texture.tint = colour;
-	const result = wrapped(...args);
-	this.document.texture.tint = saved;
-	return result;
+	wrapped(...args);
+	this.controlIcon.icon.tint = colour;
 }
 
 function Note_onUpdate(wrapper, changed, options, userId) {
@@ -107,9 +101,9 @@ Hooks.once('canvasInit', () => {
 	// This is only required for Players, not GMs (game.user accessible from 'ready' event but not 'init' event)
 	if (!game.user.isGM) {
 		libWrapper.register(MODULE_NAME, 'CONFIG.Note.objectClass.prototype.isVisible',        Note_isVisible,       libWrapper.MIXED);
-		libWrapper.register(MODULE_NAME, 'CONFIG.Note.objectClass.prototype._drawControlIcon', Note_drawControlIcon, libWrapper.WRAPPER);
+		libWrapper.register(MODULE_NAME, 'CONFIG.Note.objectClass.prototype._refreshState', Note_refreshState, libWrapper.WRAPPER);
 	} else {
-		libWrapper.register(MODULE_NAME, 'CONFIG.Note.objectClass.prototype._drawControlIcon', Note_drawControlIconGM, libWrapper.WRAPPER);
+		libWrapper.register(MODULE_NAME, 'CONFIG.Note.objectClass.prototype._refreshState', Note_refreshStateGM, libWrapper.WRAPPER);
 	}
 	libWrapper.register(MODULE_NAME, 'CONFIG.Note.objectClass.prototype._onUpdate', Note_onUpdate, libWrapper.WRAPPER);
 })

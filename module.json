@@ -4,8 +4,8 @@
   "description": "This module adds an optional 'revealed' state to each scene Note. This allows a Note to be displayed to players even if the linked document is not revealed to the player, in which case it will appear as a non-connected Note.",
   "version": "2.2",
   "compatibility": {
-    "minimum": "13",
-    "verified": "13.345"
+    "minimum": 14,
+    "verified": 14
   },
   "author": "Farling",
   "authors": [
